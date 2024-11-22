@@ -3,10 +3,10 @@ session_start();
 $isLoggedIn = isset($_SESSION['user']); // Check if the user is logged in
 $isEmployee = ($_SESSION['is_employee']);
 
-include "dbconfig.php";
-$con = mysqli_connect($host, $username, $password, $dbname) or die("<br>Cannot connect to DB:$dbname on $host\n");
+include "db_connection.php";
+
 $query = "SELECT * FROM test;";
-$result = mysqli_query($con, $query);
+$result = mysqli_query($conn, $query);
 
 //Initialize spot information in a list. Put data from database into the list.
 $spotOccupy = [];
@@ -160,10 +160,10 @@ while ($row = mysqli_fetch_assoc($result)) {
             <h4>Spot Table</h4>
             <?php
             $query = "SELECT * FROM spots;";
-            $result = mysqli_query($con, $query);
+            $result = mysqli_query($conn, $query);
 
             if (!$result) {
-                echo "Error executing query: " . mysqli_error($con);
+                echo "Error executing query: " . mysqli_error($conn);
             } else {
                 echo "<table border='1'>";
                 echo "<tr>
@@ -191,10 +191,10 @@ while ($row = mysqli_fetch_assoc($result)) {
             <h4>Boats Table</h4>
             <?php
             $query = "SELECT * FROM boats;";
-            $result = mysqli_query($con, $query);
+            $result = mysqli_query($conn, $query);
 
             if (!$result) {
-                echo "Error executing query: " . mysqli_error($con);
+                echo "Error executing query: " . mysqli_error($conn);
             } else {
                 echo "<table border='1'>";
                 echo "<tr>
@@ -218,10 +218,10 @@ while ($row = mysqli_fetch_assoc($result)) {
             <h4>Reservations Table</h4>
             <?php
             $query = "SELECT * FROM reservations;";
-            $result = mysqli_query($con, $query);
+            $result = mysqli_query($conn, $query);
 
             if (!$result) {
-                echo "Error executing query: " . mysqli_error($con);
+                echo "Error executing query: " . mysqli_error($conn);
             } else {
                 echo "<table border='1'>";
                 echo "<tr>

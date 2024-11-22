@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'db_connection.php';
+include '../db_connection.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'];
@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (password_verify($password, $dbPassword)) {
             $_SESSION['user'] = $dbEmail; // Store user email
             $_SESSION['is_employee'] = $isEmployee; // Store employee status
-            header("Location: index.php"); // Redirect to main page
+            header("Location: ../index.php"); // Redirect to main page
             exit();
         } else {
             echo "Invalid password.";

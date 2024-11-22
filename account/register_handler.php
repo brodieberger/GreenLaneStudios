@@ -1,5 +1,5 @@
 <?php
-include 'db_connection.php';
+include '../db_connection.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Sanitize and hash the user inputs
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($insert_stmt->execute()) {
             echo "Account created successfully!";
-            header("Refresh: 2; URL=index.php"); // Redirect to index.php after 2 seconds
+            header("Refresh: 2; URL=../index.php"); // Redirect to index.php after 2 seconds
             exit;
         } else {
             echo "Error creating account: " . $insert_stmt->error;
