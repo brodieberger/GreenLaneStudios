@@ -161,23 +161,23 @@ while ($row = mysqli_fetch_assoc($result)) {
 
             <h4>Spot Table</h4>
 
-<!-- Dropdown Form to Switch Lots -->
-<form method="GET" class="mb-3">
-    <label for="lot_name" class="form-label">Select Lot:</label>
-    <select name="lot_name" id="lot_name" class="form-select" onchange="this.form.submit()">
-        <option value="LOT A" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT A') ? 'selected' : ''; ?>>LOT A</option>
-        <option value="LOT B" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT B') ? 'selected' : ''; ?>>LOT B</option>
-        <option value="LOT C" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT C') ? 'selected' : ''; ?>>LOT C</option>
-        <option value="LOT D" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT D') ? 'selected' : ''; ?>>LOT D</option>
-    </select>
-</form>
+            <!-- Dropdown Form to Switch Lots -->
+            <form method="GET" class="mb-3">
+                <label for="lot_name" class="form-label">Select Lot:</label>
+                <select name="lot_name" id="lot_name" class="form-select" onchange="this.form.submit()">
+                    <option value="LOT A" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT A') ? 'selected' : ''; ?>>LOT A</option>
+                    <option value="LOT B" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT B') ? 'selected' : ''; ?>>LOT B</option>
+                    <option value="LOT C" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT C') ? 'selected' : ''; ?>>LOT C</option>
+                    <option value="LOT D" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT D') ? 'selected' : ''; ?>>LOT D</option>
+                </select>
+            </form>
 
-<?php
-// Default to LOT A if no lot is selected
-$selected_lot = $_GET['lot_name'] ?? 'LOT A';
+            <?php
+            // Default to LOT A if no lot is selected
+            $selected_lot = $_GET['lot_name'] ?? 'LOT A';
 
-// SQL Query to Fetch Data Based on Selected Lot
-$query = "
+            // SQL Query to Fetch Data Based on Selected Lot
+            $query = "
     SELECT 
         spots.id AS spot_id,
         spots.lot_name,
@@ -190,36 +190,136 @@ $query = "
     WHERE spots.lot_name = '" . mysqli_real_escape_string($conn, $selected_lot) . "';
 ";
 
-$result = mysqli_query($conn, $query);
+            $result = mysqli_query($conn, $query);
 
-if (!$result) {
-    echo "<div class='alert alert-danger'>Error executing query: " . mysqli_error($conn) . "</div>";
-} else {
-    echo "<table class='table table-bordered table-striped'>";
-    echo "<thead>";
-    echo "<tr>
+            if (!$result) {
+                echo "<div class='alert alert-danger'>Error executing query: " . mysqli_error($conn) . "</div>";
+            } else {
+                echo "<table class='table table-bordered table-striped'>";
+                echo "<thead>";
+                echo "<tr>
             <th>Spot ID</th>
             <th>Lot Name</th>
             <th>Is Occupied</th>
             <th>Owner Name</th>
             <th>Boat Name</th>
         </tr>";
-    echo "</thead><tbody>";
-    while ($row = mysqli_fetch_assoc($result)) {
-        echo "<tr>
+                echo "</thead><tbody>";
+                while ($row = mysqli_fetch_assoc($result)) {
+                    echo "<tr>
                 <td>" . htmlspecialchars($row['spot_id']) . "</td>
                 <td>" . htmlspecialchars($row['lot_name']) . "</td>
                 <td>" . ($row['is_occupied'] ? 'Yes' : 'No') . "</td>
                 <td>" . htmlspecialchars($row['owner_name'] ?? 'N/A') . "</td>
                 <td>" . htmlspecialchars($row['boat_name'] ?? 'N/A') . "</td>
             </tr>";
-    }
-    echo "</tbody></table>";
-}
-?>
+                }
+                echo "</tbody></table>";
+            }
+            ?>
+            <form action="" method="POST">
+                <h4>Clear Spot</h4>
+                <div class="mb-3" style="width: 25%;">
+                    <label for="spot_id" class="form-label">Spot ID:</label>
+                    <select id="spot_id" name="spot_id" class="form-select">
+                        <option value="" disabled selected>Select a spot</option>
+                        <?php
+                        // Fetch all occupied spot IDs
+                        $query = "SELECT id FROM spots WHERE is_occupied = 1";
+                        $result = mysqli_query($conn, $query);
+                        while ($row = mysqli_fetch_assoc($result)) {
+                            echo "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['id']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                <button type="submit" name="action" value="clear" class="btn btn-warning">Clear Spot</button>
 
-        <br>
-        <!-- SPOT TABLE END------------------------------------------------------------------------------------------------->
+                <hr>
+
+                <h4>Assign User and Boat to a Spot</h4>
+                <div class="mb-3" style="width: 25%;">
+                    <label for="assign_spot_id" class="form-label">Spot ID:</label>
+                    <select id="assign_spot_id" name="assign_spot_id" class="form-select">
+                        <option value="" disabled selected>Select a spot</option>
+                        <?php
+                        // Fetch all unoccupied spot IDs
+                        $query = "SELECT id FROM spots WHERE is_occupied = 0";
+                        $result = mysqli_query($conn, $query);
+                        while ($row = mysqli_fetch_assoc($result)) {
+                            echo "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['id']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="mb-3" style="width: 25%;">
+                    <label for="owner_id" class="form-label">Owner ID:</label>
+                    <select id="owner_id" name="owner_id" class="form-select" onchange="updateBoats()">
+                        <option value="" disabled selected>Select an owner</option>
+                        <?php
+                        // Fetch all user IDs
+                        $query = "SELECT id, name FROM users";
+                        $result = mysqli_query($conn, $query);
+                        while ($row = mysqli_fetch_assoc($result)) {
+                            echo "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['name']) . "</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+
+                <div class="mb-3" style="width: 25%;">
+                    <label for="boat_id" class="form-label">Boat ID:</label>
+                    <select id="boat_id" name="boat_id" class="form-select">
+                        <option value="" disabled selected>Select a boat</option>
+                        <!-- Options will be dynamically loaded -->
+                    </select>
+                </div>
+
+                <button type="submit" name="action" value="assign" class="btn btn-primary">Assign Spot</button>
+            </form>
+
+            <?php
+
+            //LOGIC FOR CLEARING / UPDATING A TABLE
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                if (isset($_POST['action'])) {
+                    if ($_POST['action'] === 'clear') {
+                        // Clear spot logic
+                        if (!empty($_POST['spot_id'])) {
+                            $spot_id = intval($_POST['spot_id']);
+                            $query = "UPDATE spots SET is_occupied = 0, owner_id = NULL, boat_id = NULL WHERE id = $spot_id";
+                            if (mysqli_query($conn, $query)) {
+                                echo "<div class='alert alert-success'>Spot $spot_id has been cleared.</div>";
+                            } else {
+                                echo "<div class='alert alert-danger'>Failed to clear the spot. Error: " . mysqli_error($conn) . "</div>";
+                            }
+                        } else {
+                            echo "<div class='alert alert-warning'>Please select a spot to clear.</div>";
+                        }
+                    } elseif ($_POST['action'] === 'assign') {
+                        // Assign user and boat to spot logic
+                        if (!empty($_POST['assign_spot_id']) && !empty($_POST['owner_id']) && !empty($_POST['boat_id'])) {
+                            $spot_id = intval($_POST['assign_spot_id']);
+                            $owner_id = intval($_POST['owner_id']); // Use owner_id here
+                            $boat_id = intval($_POST['boat_id']);
+                            $query = "UPDATE spots SET is_occupied = 1, owner_id = $owner_id, boat_id = $boat_id WHERE id = $spot_id";
+                            if (mysqli_query($conn, $query)) {
+                                echo "<div class='alert alert-success'>Spot $spot_id has been assigned to Owner $owner_id with Boat $boat_id.</div>";
+                            } else {
+                                echo "<div class='alert alert-danger'>Failed to assign the spot. Error: " . mysqli_error($conn) . "</div>";
+                            }
+                        } else {
+                            echo "<div class='alert alert-warning'>Please fill out all fields to assign a spot.</div>";
+                        }
+                    }
+
+                }
+            }
+            ?>
+
+
+            <br>
+            <!-- SPOT TABLE END------------------------------------------------------------------------------------------------->
 
         <h4>Boats Table</h4>
         <!-- BOAT TABLE ------------------------------------------------------------------------------------------------->
@@ -318,6 +418,31 @@ if (!$result) {
             if (isAvailable) {
                 let requestemail = prompt('Enter your email address: (NOTE THIS DOESNT DO ANYTHING!!! CLicking this button should open a form somewhere on the screen)');
 
+            }
+        }
+
+        function updateBoats() {
+            const ownerId = document.getElementById('owner_id').value;
+            const boatSelect = document.getElementById('boat_id');
+
+            // Clear existing options
+            boatSelect.innerHTML = '<option value="" disabled selected>Select a boat</option>';
+
+            if (ownerId) {
+                fetch(`fetch_boats.php?owner_id=${ownerId}`)
+                    .then(response => response.json())
+                    .then(boats => {
+                        // Populate Boat ID dropdown
+                        boats.forEach(boat => {
+                            const option = document.createElement('option');
+                            option.value = boat.id;
+                            option.textContent = boat.name;
+                            boatSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching boats:', error);
+                    });
             }
         }
     </script>
