@@ -7,13 +7,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'];
 
     // Query to check if user exists and get their details
-    $query = "SELECT email, password, is_employee FROM users WHERE email = ?";
+    $query = "SELECT id, email, password, is_employee FROM users WHERE email = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("s", $email);
     $stmt->execute();
 
     // Bind result variables
-    $stmt->bind_result($dbEmail, $dbPassword, $isEmployee);
+    $stmt->bind_result($dbID, $dbEmail, $dbPassword, $isEmployee);
     $userFound = false;
 
     // Fetch the single row
@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $userFound = true;
         if (password_verify($password, $dbPassword)) {
             $_SESSION['user'] = $dbEmail; // Store user email
+            $_SESSION['id'] = $dbID; // Store user ID
             $_SESSION['is_employee'] = $isEmployee; // Store employee status
             header("Location: ../index.php"); // Redirect to main page
             exit();

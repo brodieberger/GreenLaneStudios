@@ -92,10 +92,10 @@ while ($row = mysqli_fetch_assoc($result)) {
                             </li>
                             <li class="nav-item" style="margin-left: 5px;">
                                 <div class="btn-container">
-                                    <button onclick="window.location.href='login.php'" class="btn btn-warning">
+                                    <button onclick="window.location.href='account/login.php'" class="btn btn-warning">
                                         Account Settings
                                     </button>
-                                    <form action="logout.php" method="post" style="display: inline;">
+                                    <form action="account/logout.php" method="post" style="display: inline;">
                                         <button type="submit" class="btn btn-danger">Logout</button>
                                     </form>
                                 </div>
@@ -109,10 +109,10 @@ while ($row = mysqli_fetch_assoc($result)) {
                                 <!-- Display options for non-logged-in users -->
                                 <div class="text-center">
                                     <div class="btn-container">
-                                        <button onclick="window.location.href='login.php'" class="btn btn-primary">
+                                        <button onclick="window.location.href='account/login.php'" class="btn btn-primary">
                                             Login
                                         </button>
-                                        <button onclick="window.location.href='login.php'" class="btn btn-primary">
+                                        <button onclick="window.location.href='account/login.php'" class="btn btn-primary">
                                             Create Account
                                         </button>
                                     </div>
@@ -154,112 +154,160 @@ while ($row = mysqli_fetch_assoc($result)) {
                 top right.</p>
         </div>
     <?php elseif ($isEmployee == 1): ?>
-        <div class="content" style="margin-left:10px;">
+        <div class="content" style="margin-left:10px; width:50%">
+
+
             <h1>Employee View</h1><br>
 
             <h4>Spot Table</h4>
-            <?php
-            $query = "SELECT * FROM spots;";
-            $result = mysqli_query($conn, $query);
 
-            if (!$result) {
-                echo "Error executing query: " . mysqli_error($conn);
-            } else {
-                echo "<table border='1'>";
-                echo "<tr>
-                    <th>ID</th>
-                    <th>Lot Name</th>
-                    <th>Boat ID</th>
-                    <th>Owner ID</th>
-                    <th>Is Occupied</th>
-                    <th>Occupied Until</th>
-                  </tr>";  // Table headers
-                while ($row = mysqli_fetch_array($result)) {
-                    echo "<tr>
-                        <td>" . htmlspecialchars($row['id']) . "</td>
-                        <td>" . htmlspecialchars($row['lot_name']) . "</td>
-                        <td>" . htmlspecialchars($row['boat_id']) . "</td>
-                        <td>" . htmlspecialchars($row['owner_id']) . "</td>
-                        <td>" . htmlspecialchars($row['is_occupied']) . "</td>
-                        <td>" . htmlspecialchars($row['occupied_until']) . "</td>
-                      </tr>";
-                }
-                echo "</table>";
-            }
-            ?>
-            <br>
-            <h4>Boats Table</h4>
-            <?php
-            $query = "SELECT * FROM boats;";
-            $result = mysqli_query($conn, $query);
+<!-- Dropdown Form to Switch Lots -->
+<form method="GET" class="mb-3">
+    <label for="lot_name" class="form-label">Select Lot:</label>
+    <select name="lot_name" id="lot_name" class="form-select" onchange="this.form.submit()">
+        <option value="LOT A" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT A') ? 'selected' : ''; ?>>LOT A</option>
+        <option value="LOT B" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT B') ? 'selected' : ''; ?>>LOT B</option>
+        <option value="LOT C" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT C') ? 'selected' : ''; ?>>LOT C</option>
+        <option value="LOT D" <?php echo (isset($_GET['lot_name']) && $_GET['lot_name'] == 'LOT D') ? 'selected' : ''; ?>>LOT D</option>
+    </select>
+</form>
 
-            if (!$result) {
-                echo "Error executing query: " . mysqli_error($conn);
-            } else {
-                echo "<table border='1'>";
-                echo "<tr>
+<?php
+// Default to LOT A if no lot is selected
+$selected_lot = $_GET['lot_name'] ?? 'LOT A';
+
+// SQL Query to Fetch Data Based on Selected Lot
+$query = "
+    SELECT 
+        spots.id AS spot_id,
+        spots.lot_name,
+        spots.is_occupied,
+        users.name AS owner_name,
+        boats.name AS boat_name
+    FROM spots
+    LEFT JOIN users ON spots.owner_id = users.id
+    LEFT JOIN boats ON spots.boat_id = boats.id
+    WHERE spots.lot_name = '" . mysqli_real_escape_string($conn, $selected_lot) . "';
+";
+
+$result = mysqli_query($conn, $query);
+
+if (!$result) {
+    echo "<div class='alert alert-danger'>Error executing query: " . mysqli_error($conn) . "</div>";
+} else {
+    echo "<table class='table table-bordered table-striped'>";
+    echo "<thead>";
+    echo "<tr>
+            <th>Spot ID</th>
+            <th>Lot Name</th>
+            <th>Is Occupied</th>
+            <th>Owner Name</th>
+            <th>Boat Name</th>
+        </tr>";
+    echo "</thead><tbody>";
+    while ($row = mysqli_fetch_assoc($result)) {
+        echo "<tr>
+                <td>" . htmlspecialchars($row['spot_id']) . "</td>
+                <td>" . htmlspecialchars($row['lot_name']) . "</td>
+                <td>" . ($row['is_occupied'] ? 'Yes' : 'No') . "</td>
+                <td>" . htmlspecialchars($row['owner_name'] ?? 'N/A') . "</td>
+                <td>" . htmlspecialchars($row['boat_name'] ?? 'N/A') . "</td>
+            </tr>";
+    }
+    echo "</tbody></table>";
+}
+?>
+
+        <br>
+        <!-- SPOT TABLE END------------------------------------------------------------------------------------------------->
+
+        <h4>Boats Table</h4>
+        <!-- BOAT TABLE ------------------------------------------------------------------------------------------------->
+
+        <?php
+        $query = "
+        SELECT 
+            boats.id AS boat_id,
+            boats.name as boat_name,
+            boats.size as size,
+            users.email AS owner_name
+        FROM boats
+        LEFT JOIN users ON boats.user_id = users.id
+            
+            ";
+        $result = mysqli_query($conn, $query);
+
+        if (!$result) {
+            echo "Error executing query: " . mysqli_error($conn);
+        } else {
+            echo "<table class='table table-bordered table-striped'>";
+            echo "<tr>
                     <th>ID</th>
-                    <th>Name</th>
+                    <th>Boat Name</th>
                     <th>Size</th>
-                    <th>User ID</th>
+                    <th>Owner</th>
                   </tr>";  // Table headers
-                while ($row = mysqli_fetch_array($result)) {
-                    echo "<tr>
-                        <td>" . htmlspecialchars($row['id']) . "</td>
-                        <td>" . htmlspecialchars($row['name']) . "</td>
-                        <td>" . htmlspecialchars($row['size']) . "</td>
-                        <td>" . htmlspecialchars($row['user_id']) . "</td>
-                      </tr>";
-                }
-                echo "</table>";
-            }
-            ?>
-            <br>
-            <h4>Reservations Table</h4>
-            <?php
-            $query = "SELECT * FROM reservations;";
-            $result = mysqli_query($conn, $query);
-
-            if (!$result) {
-                echo "Error executing query: " . mysqli_error($conn);
-            } else {
-                echo "<table border='1'>";
+            while ($row = mysqli_fetch_array($result)) {
                 echo "<tr>
+                        <td>" . htmlspecialchars($row['boat_id']) . "</td>
+                        <td>" . htmlspecialchars($row['boat_name']) . "</td>
+                        <td>" . htmlspecialchars($row['size']) . "</td>
+                        <td>" . htmlspecialchars($row['owner_name']) . "</td>
+                      </tr>";
+            }
+            echo "</table>";
+        }
+        ?>
+        <br>
+        <!-- BOAT TABLE END------------------------------------------------------------------------------------------------->
+        <!-- RESERVATIONS TABLE ------------------------------------------------------------------------------------------------->
+
+        <h4>Reservations Table</h4>
+        <?php
+        $query = "SELECT * FROM reservations;";
+        $result = mysqli_query($conn, $query);
+
+        if (!$result) {
+            echo "Error executing query: " . mysqli_error($conn);
+        } else {
+            echo "<table class='table table-bordered table-striped'>";
+            echo "<tr>
                     <th>ID</th>
                     <th>Email</th>
                     <th>Spot Requested</th>
                     <th>Date Requested</th>
-                  </tr>";  // Table headers
-                while ($row = mysqli_fetch_array($result)) {
-                    echo "<tr>
+                  </tr>";
+            while ($row = mysqli_fetch_array($result)) {
+                echo "<tr>
                         <td>" . htmlspecialchars($row['id']) . "</td>
                         <td>" . htmlspecialchars($row['email']) . "</td>
                         <td>" . htmlspecialchars($row['spot_requested']) . "</td>
                         <td>" . htmlspecialchars($row['date_requested']) . "</td>
                       </tr>";
-                }
-                echo "</table>";
             }
-            ?>
-            <br>
-        </div>
+            echo "</table>";
+        }
+        ?>
+        <!-- RESERVATIONS TABLE END------------------------------------------------------------------------------------------------->
+        <br>
+    </div>
     <?php elseif ($isEmployee == 0): ?>
-        <div class="content" style="margin-left:10px;">
-            <h1>Customer View</h1>
-            <form action="reservation_handler.php" method="POST">
-                <div class="mb-3" style="width: 25%">
-                    <label for="spot" class="form-label">Spot Number:</label>
-                    <select id="spot" name="spot" class="form-select" required>
-                        <option value="" disabled selected>Select a spot</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary">Request Spot</button>
-            </form>
-        </div>
+    <div class="content" style="margin-left:10px;">
+        <h1>Customer View</h1>
+        <form action="reservation_handler.php" method="POST">
+            <div class="mb-3" style="width: 25%">
+                <label for="spot" class="form-label">Spot Number:</label>
+                <select id="spot" name="spot" class="form-select" required>
+                    <option value="" disabled selected>Select a spot</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Request Spot</button>
+        </form>
+    </div>
     <?php endif; ?>
 
 
