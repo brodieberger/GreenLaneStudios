@@ -10,13 +10,9 @@ $isLoggedIn = isset($_SESSION['user']); // Check if the user is logged in
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hawk Island Marina</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* Add custom styles here if needed */
-    </style>
 </head>
 
 <body>
-
     <!-- NAVBAR -->
     <div class="container">
         <nav class="navbar navbar-expand-lg bg-body rounded" aria-label="Eleventh navbar example">
