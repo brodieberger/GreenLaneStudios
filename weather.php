@@ -68,10 +68,10 @@ $weatherArray = json_decode($weatherData, true);
                             </li>
                             <li class="nav-item" style="margin-left: 5px;">
                                 <div class="btn-container">
-                                    <button onclick="window.location.href='login.php'" class="btn btn-warning">
+                                    <button onclick="window.location.href='account/login.php'" class="btn btn-warning">
                                         Account Settings
                                     </button>
-                                    <form action="logout.php" method="post" style="display: inline;">
+                                    <form action="account/logout.php" method="post" style="display: inline;">
                                         <button type="submit" class="btn btn-danger">Logout</button>
                                     </form>
                                 </div>
@@ -85,10 +85,10 @@ $weatherArray = json_decode($weatherData, true);
                                 <!-- Display options for non-logged-in users -->
                                 <div class="text-center">
                                     <div class="btn-container">
-                                        <button onclick="window.location.href='login.php'" class="btn btn-primary">
+                                        <button onclick="window.location.href='account/login.php'" class="btn btn-primary">
                                             Login
                                         </button>
-                                        <button onclick="window.location.href='login.php'" class="btn btn-primary">
+                                        <button onclick="window.location.href='account/login.php'" class="btn btn-primary">
                                             Create Account
                                         </button>
                                     </div>

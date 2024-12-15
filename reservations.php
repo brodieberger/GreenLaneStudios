@@ -133,19 +133,18 @@ while ($row = mysqli_fetch_assoc($result)) {
         <!-- Creates a div for the styled spot, which is just a circle. Checks the created list and echoes the number (hardcoded). 
      If the spot is open, then allow an onclick request which goes to the function requestspot below.-->
         <div class="spot <?php echo $spotOccupy[0]; ?>" style="top: 340px; left: 270px;" <?php if ($spotOccupy[0] == "open") {
-               echo 'onclick="requestSpot(\'Spot 1\')"';
-           } ?>>Spot 1</div>
+                                                                                                echo 'onclick="requestSpot(\'Spot 1\')"';
+                                                                                            } ?>>Spot 1</div>
         <div class="spot <?php echo $spotOccupy[1]; ?>" style="top: 120px; left: 350px;" <?php if ($spotOccupy[1] == "open") {
-               echo 'onclick="requestSpot(\'Spot 2\')"';
-           } ?>>Spot 2</div>
+                                                                                                echo 'onclick="requestSpot(\'Spot 2\')"';
+                                                                                            } ?>>Spot 2</div>
         <div class="spot <?php echo $spotOccupy[2]; ?>" style="top: 80px; left: 500px;" <?php if ($spotOccupy[2] == "open") {
-               echo 'onclick="requestSpot(\'Spot 3\')"';
-           } ?>>Spot 3</div>
+                                                                                            echo 'onclick="requestSpot(\'Spot 3\')"';
+                                                                                        } ?>>Spot 3</div>
         <div class="spot <?php echo $spotOccupy[3]; ?>" style="top: 200px; left: 730px;" <?php if ($spotOccupy[3] == "open") {
-               echo 'onclick="requestSpot(\'Spot 4\')"';
-           } ?>>Spot 4</div>
+                                                                                                echo 'onclick="requestSpot(\'Spot 4\')"';
+                                                                                            } ?>>Spot 4</div>
     </div>
-
 
     <?php if (!$isLoggedIn): ?>
         <div class="content" style="margin-left:10px;">
@@ -258,10 +257,10 @@ while ($row = mysqli_fetch_assoc($result)) {
                         <option value="" disabled selected>Select an owner</option>
                         <?php
                         // Fetch all user IDs
-                        $query = "SELECT id, name FROM users";
+                        $query = "SELECT id, email FROM users";
                         $result = mysqli_query($conn, $query);
                         while ($row = mysqli_fetch_assoc($result)) {
-                            echo "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['name']) . "</option>";
+                            echo "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['email']) . "</option>";
                         }
                         ?>
                     </select>
@@ -280,18 +279,53 @@ while ($row = mysqli_fetch_assoc($result)) {
 
             <?php
 
-            //LOGIC FOR CLEARING / UPDATING A TABLE
+// LOGIC FOR CLEARING / UPDATING A TABLE
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (isset($_POST['action'])) {
                     if ($_POST['action'] === 'clear') {
                         // Clear spot logic
                         if (!empty($_POST['spot_id'])) {
                             $spot_id = intval($_POST['spot_id']);
-                            $query = "UPDATE spots SET is_occupied = 0, owner_id = NULL, boat_id = NULL WHERE id = $spot_id";
-                            if (mysqli_query($conn, $query)) {
-                                echo "<div class='alert alert-success'>Spot $spot_id has been cleared.</div>";
+
+                            // Fetch the lot name associated with the spot
+                            $lot_query = "SELECT lot_name FROM spots WHERE id = $spot_id";
+                            $lot_result = mysqli_query($conn, $lot_query);
+                            $lot_row = mysqli_fetch_assoc($lot_result);
+
+                            if ($lot_row) {
+                                $lot_name = $lot_row['lot_name'];
+
+                                // Clear the spot
+                                $query = "UPDATE spots SET is_occupied = 0, owner_id = NULL, boat_id = NULL WHERE id = $spot_id";
+                                if (mysqli_query($conn, $query)) {
+                                    echo "<div class='alert alert-success'>Spot $spot_id has been cleared.</div>";
+
+                                    // Fetch emails from reservations table for the cleared lot
+                                    $email_query = "SELECT email FROM reservations WHERE lot_requested = '" . mysqli_real_escape_string($conn, $lot_name) . "'";
+                                    $email_result = mysqli_query($conn, $email_query);
+
+                                    if ($email_result) {
+                                        $subject = "New Spot Available in $lot_name";
+                                        $message = "A new spot has just become available in $lot_name. Our employees will get in touch to arrange payment. \n\nThank you for choosing Hawk Island Marina!";
+                                        $headers = "From: SoftwareProject@hawkislandmarina.net";
+
+                                        // Send email to each user
+                                        while ($email_row = mysqli_fetch_assoc($email_result)) {
+                                            $to = $email_row['email'];
+                                            if (mail($to, $subject, $message, $headers)) {
+                                                echo "<div class='alert alert-info'>Notification sent to $to.</div>";
+                                            } else {
+                                                echo "<div class='alert alert-warning'>Failed to send notification to $to.</div>";
+                                            }
+                                        }
+                                    } else {
+                                        echo "<div class='alert alert-warning'>No reservations found for lot $lot_name.</div>";
+                                    }
+                                } else {
+                                    echo "<div class='alert alert-danger'>Failed to clear the spot. Error: " . mysqli_error($conn) . "</div>";
+                                }
                             } else {
-                                echo "<div class='alert alert-danger'>Failed to clear the spot. Error: " . mysqli_error($conn) . "</div>";
+                                echo "<div class='alert alert-danger'>Lot not found for Spot ID $spot_id.</div>";
                             }
                         } else {
                             echo "<div class='alert alert-warning'>Please select a spot to clear.</div>";
@@ -300,7 +334,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                         // Assign user and boat to spot logic
                         if (!empty($_POST['assign_spot_id']) && !empty($_POST['owner_id']) && !empty($_POST['boat_id'])) {
                             $spot_id = intval($_POST['assign_spot_id']);
-                            $owner_id = intval($_POST['owner_id']); // Use owner_id here
+                            $owner_id = intval($_POST['owner_id']);
                             $boat_id = intval($_POST['boat_id']);
                             $query = "UPDATE spots SET is_occupied = 1, owner_id = $owner_id, boat_id = $boat_id WHERE id = $spot_id";
                             if (mysqli_query($conn, $query)) {
@@ -312,20 +346,18 @@ while ($row = mysqli_fetch_assoc($result)) {
                             echo "<div class='alert alert-warning'>Please fill out all fields to assign a spot.</div>";
                         }
                     }
-
                 }
             }
             ?>
 
-
             <br>
             <!-- SPOT TABLE END------------------------------------------------------------------------------------------------->
 
-        <h4>Boats Table</h4>
-        <!-- BOAT TABLE ------------------------------------------------------------------------------------------------->
+            <h4>Boats Table</h4>
+            <!-- BOAT TABLE ------------------------------------------------------------------------------------------------->
 
-        <?php
-        $query = "
+            <?php
+            $query = "
         SELECT 
             boats.id AS boat_id,
             boats.name as boat_name,
@@ -335,79 +367,211 @@ while ($row = mysqli_fetch_assoc($result)) {
         LEFT JOIN users ON boats.user_id = users.id
             
             ";
-        $result = mysqli_query($conn, $query);
+            $result = mysqli_query($conn, $query);
 
-        if (!$result) {
-            echo "Error executing query: " . mysqli_error($conn);
-        } else {
-            echo "<table class='table table-bordered table-striped'>";
-            echo "<tr>
+            if (!$result) {
+                echo "Error executing query: " . mysqli_error($conn);
+            } else {
+                echo "<table class='table table-bordered table-striped'>";
+                echo "<tr>
                     <th>ID</th>
                     <th>Boat Name</th>
                     <th>Size</th>
                     <th>Owner</th>
                   </tr>";  // Table headers
-            while ($row = mysqli_fetch_array($result)) {
-                echo "<tr>
+                while ($row = mysqli_fetch_array($result)) {
+                    echo "<tr>
                         <td>" . htmlspecialchars($row['boat_id']) . "</td>
                         <td>" . htmlspecialchars($row['boat_name']) . "</td>
                         <td>" . htmlspecialchars($row['size']) . "</td>
                         <td>" . htmlspecialchars($row['owner_name']) . "</td>
                       </tr>";
+                }
+                echo "</table>";
             }
-            echo "</table>";
-        }
-        ?>
-        <br>
-        <!-- BOAT TABLE END------------------------------------------------------------------------------------------------->
-        <!-- RESERVATIONS TABLE ------------------------------------------------------------------------------------------------->
+            ?>
+            <br>
+            <!-- BOAT TABLE END------------------------------------------------------------------------------------------------->
+            <!-- INSPECTION TABLE------------------------------------------------------------------------------------------------->
+            <h4>Inspection Records</h4>
+            <?php
+            $query = "
+                SELECT 
+                    inspection.inspection_id, 
+                    boats.name AS boat_name, 
+                    inspection.inspection_date, 
+                    inspection.notes 
+                FROM inspection
+                INNER JOIN boats ON inspection.boat_id = boats.id
+                ORDER BY inspection.inspection_date DESC
+            ";
+            $result = mysqli_query($conn, $query);
 
-        <h4>Reservations Table</h4>
-        <?php
-        $query = "SELECT * FROM reservations;";
-        $result = mysqli_query($conn, $query);
+            if (!$result) {
+                echo "<div class='alert alert-danger'>Error fetching inspection records: " . mysqli_error($conn) . "</div>";
+            } else {
+                echo "<table class='table table-bordered table-striped'>";
+                echo "<thead>
+                        <tr>
+                            <th>Inspection ID</th>
+                            <th>Boat Name</th>
+                            <th>Inspection Date</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>";
+                while ($row = mysqli_fetch_assoc($result)) {
+                    echo "<tr>
+                            <td>" . htmlspecialchars($row['inspection_id']) . "</td>
+                            <td>" . htmlspecialchars($row['boat_name']) . "</td>
+                            <td>" . htmlspecialchars($row['inspection_date']) . "</td>
+                            <td>" . htmlspecialchars($row['notes']) . "</td>
+                        </tr>";
+                }
+                echo "</tbody></table>";
+            }
+            // Display the message above the table
+            if (!empty($message)) {
+                echo $message;
+            }
+            ?>
 
-        if (!$result) {
-            echo "Error executing query: " . mysqli_error($conn);
-        } else {
-            echo "<table class='table table-bordered table-striped'>";
-            echo "<tr>
+            <form action="" method="POST" class="mt-4">
+                <h4>Add Inspection Notes</h4>
+                <div class="mb-3">
+                    <label for="boat_id" class="form-label">Boat ID:</label>
+                    <select id="boat_id" name="boat_id" class="form-select" required>
+                        <option value="" disabled selected>Select a boat</option>
+                        <?php
+                        // Fetch all boats for the dropdown
+                        $query = "SELECT id, name FROM boats";
+                        $result = mysqli_query($conn, $query);
+                        while ($row = mysqli_fetch_assoc($result)) {
+                            echo "<option value='" . htmlspecialchars($row['id']) . "'>Boat " . htmlspecialchars($row['name']) . " (ID: " . htmlspecialchars($row['id']) . ")</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="inspection_date" class="form-label">Inspection Date:</label>
+                    <input type="date" id="inspection_date" name="inspection_date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Inspection Notes:</label>
+                    <textarea id="notes" name="notes" class="form-control" rows="4" required></textarea>
+                </div>
+                <button type="submit" name="action" value="add_inspection" class="btn btn-primary">Add Inspection Notes</button>
+            </form>
+
+            <!-- RESERVATIONS TABLE ------------------------------------------------------------------------------------------------->
+
+            <h4>Reservations Table</h4>
+            <?php
+            $query = "SELECT * FROM reservations;";
+            $result = mysqli_query($conn, $query);
+
+            if (!$result) {
+                echo "Error executing query: " . mysqli_error($conn);
+            } else {
+                echo "<table class='table table-bordered table-striped'>";
+                echo "<tr>
                     <th>ID</th>
                     <th>Email</th>
                     <th>Spot Requested</th>
                     <th>Date Requested</th>
                   </tr>";
-            while ($row = mysqli_fetch_array($result)) {
-                echo "<tr>
+                while ($row = mysqli_fetch_array($result)) {
+                    echo "<tr>
                         <td>" . htmlspecialchars($row['id']) . "</td>
                         <td>" . htmlspecialchars($row['email']) . "</td>
                         <td>" . htmlspecialchars($row['spot_requested']) . "</td>
                         <td>" . htmlspecialchars($row['date_requested']) . "</td>
                       </tr>";
+                }
+                echo "</table>";
             }
-            echo "</table>";
-        }
-        ?>
-        <!-- RESERVATIONS TABLE END------------------------------------------------------------------------------------------------->
-        <br>
-    </div>
+            ?>
+            <!-- RESERVATIONS TABLE END------------------------------------------------------------------------------------------------->
+            <!-- PRICING UPDATE TABLE------------------------------------------------------------------------------------------------->
+
+            <h4>Service Pricing</h4>
+            <?php
+            $query = "SELECT service_name, price FROM services ORDER BY service_name";
+            $result = mysqli_query($conn, $query);
+
+            if (!$result) {
+                echo "<div class='alert alert-danger'>Error fetching services: " . mysqli_error($conn) . "</div>";
+            } else {
+                echo "<table class='table table-bordered table-striped'>";
+                echo "<thead>
+            <tr>
+                <th>Service</th>
+                <th>Price</th>
+            </tr>
+          </thead>
+          <tbody>";
+                while ($row = mysqli_fetch_assoc($result)) {
+                    echo "<tr>
+                <td>" . htmlspecialchars($row['service_name']) . "</td>
+                <td>$" . htmlspecialchars($row['price']) . "</td>
+              </tr>";
+                }
+                echo "</tbody></table>";
+            }
+
+            // Display the message if it exists
+            if (isset($_SESSION['message'])) {
+                echo $_SESSION['message'];
+                unset($_SESSION['message']); // Clear the message after displaying it
+            }
+            ?>
+
+            <h4>Update Service Pricing</h4>
+            <form action="" method="POST">
+                <div class="mb-3">
+                    <label for="service_id" class="form-label">Service:</label>
+                    <select id="service_id" name="service_id" class="form-select" required>
+                        <option value="" disabled selected>Select a service</option>
+                        <?php
+                        // Fetch all services for the dropdown
+                        $query = "SELECT service_id, service_name, price FROM services";
+                        $result = mysqli_query($conn, $query);
+                        while ($row = mysqli_fetch_assoc($result)) {
+                            echo "<option value='" . htmlspecialchars($row['service_id']) . "'>" . htmlspecialchars($row['service_name']) . " (Current Price: $" . htmlspecialchars($row['price']) . ")</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="new_price" class="form-label">New Price:</label>
+                    <input type="number" id="new_price" name="new_price" class="form-control" step="0.01" min="0" required>
+                </div>
+                <button type="submit" name="action" value="update_service_price" class="btn btn-primary">Update Price</button>
+            </form>
+
+            <br>
+        </div>
     <?php elseif ($isEmployee == 0): ?>
-    <div class="content" style="margin-left:10px;">
-        <h1>Customer View</h1>
-        <form action="reservation_handler.php" method="POST">
-            <div class="mb-3" style="width: 25%">
-                <label for="spot" class="form-label">Spot Number:</label>
-                <select id="spot" name="spot" class="form-select" required>
-                    <option value="" disabled selected>Select a spot</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                </select>
+        <div class="content" style="margin-left:10px;">
+            <h1>Customer View</h1>
+            <form action="reservation_handler.php" method="POST">
+                <div class="mb-3" style="width: 25%">
+                    <label for="spot" class="form-label">Spot Number:</label>
+                    <select id="spot" name="spot" class="form-select" required>
+                        <option value="" disabled selected>Select a spot</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Request Spot</button>
+            </form>
+            <!-- Print Map button directly below Request Spot -->
+            <div class="mt-3">
+                <button onclick="printMap()" class="btn btn-primary">Print Map</button>
             </div>
-            <button type="submit" class="btn btn-primary">Request Spot</button>
-        </form>
-    </div>
+        </div>
     <?php endif; ?>
 
 
@@ -446,7 +610,71 @@ while ($row = mysqli_fetch_assoc($result)) {
             }
         }
     </script>
+    <script>
+        function printMap() {
+            const mapContainer = document.getElementById('marina-map');
+            const clonedMap = mapContainer.cloneNode(true); // Clone the map container
 
+            // Open a new window for printing
+            const printWindow = window.open('', '_blank', 'width=908,height=593');
+            printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Print Map</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100%;
+                        }
+                        .map-container {
+                            position: relative;
+                            width: 908px;
+                            height: 593px;
+                            background-image: url('images/marina_map.png');
+                            background-size: cover;
+                            border: 1px solid #ccc;
+                        }
+                        .spot {
+                            position: absolute;
+                            width: 40px;
+                            height: 40px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 12px;
+                            color: white;
+                            cursor: pointer;
+                        }
+                        .open {
+                            background-color: green;
+                        }
+                        .closed {
+                            background-color: lightgray;
+                            border: 2px solid red;
+                            color: darkred;
+                        }
+                    </style>
+                </head>
+                <body>
+                </body>
+            </html>
+        `);
+
+            // Append the cloned map container to the new window's body
+            printWindow.document.body.appendChild(clonedMap);
+
+            // Trigger the print dialog after the content has loaded
+            printWindow.document.close();
+            printWindow.onload = function() {
+                printWindow.print();
+            };
+        }
+    </script>
 </body>
 
 </html>
